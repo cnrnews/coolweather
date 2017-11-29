@@ -24,6 +24,9 @@ import org.litepal.crud.DataSupport;
 import java.util.ArrayList;
 import java.util.List;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
+
 /**
  * @author:candy 创建时间:2017/11/29 8:57
  * 邮箱:1601796593@qq.com
@@ -36,10 +39,11 @@ public class ChooseAreaActivity extends BaseActivity implements AdapterView.OnIt
     private static final int LEVEL_PROVINCE = 0;
     private static final int LEVEL_CITY = 1;
     private static final int LEVEL_COUNTRY = 2;
+    @BindView(R.id.tv_are_name)
+    TextView mTvAreName;
+    @BindView(R.id.listview)
+    ListView mListview;
 
-
-    private TextView mTvAreName;
-    private ListView mListview;
     private ArrayAdapter<String> mAreaAdapter;
     private List<String> mDatas = new ArrayList<>();
 
@@ -75,6 +79,7 @@ public class ChooseAreaActivity extends BaseActivity implements AdapterView.OnIt
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_choose_area);
+        ButterKnife.bind(this);
         initView();
         setListener();
         mAreaAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, mDatas);
@@ -83,12 +88,14 @@ public class ChooseAreaActivity extends BaseActivity implements AdapterView.OnIt
     }
 
     private void initView() {
-        mTvAreName = findViewById(R.id.tv_are_name);
-        mListview = findViewById(R.id.listview);
-
-
+//        mTvAreName = findViewById(R.id.tv_are_name);
+//        mListview = findViewById(R.id.listview);
         mProgressDialog = new ProgressDialog(this);
         mProgressDialog.setMessage("loading...");
+    }
+
+    private void setListener() {
+        mListview.setOnItemClickListener(this);
     }
 
     /***
@@ -130,6 +137,7 @@ public class ChooseAreaActivity extends BaseActivity implements AdapterView.OnIt
             queryListFromNet();
         }
     }
+
     /***
      * 获取区县列表
      * 先从数据库获取如果为空则从网络获取
@@ -149,58 +157,17 @@ public class ChooseAreaActivity extends BaseActivity implements AdapterView.OnIt
             queryListFromNet();
         }
     }
+
     /***
      * 网络获取列表数据
      */
     private void queryListFromNet() {
         mProgressDialog.show();
-        String url = "";
-        switch (mCurrentLevel) {
-            case LEVEL_PROVINCE:
-                url = Constaint.API.API_PROVINCE_LIST;
-                break;
-            case LEVEL_CITY:
-                url = Constaint.API.API_PROVINCE_LIST + "/" + mSelectedProvince.getId();
-                break;
-            case LEVEL_COUNTRY:
-                url = Constaint.API.API_PROVINCE_LIST + "/" + mSelectedProvince.getId() + "/" + mSelectedCity.getId();
-                break;
-            default:
-                break;
-        }
         getNovate()
-                .rxGet(url, new ArrayMap<String, Object>(1), new RxStringCallback() {
+                .rxGet(buildUrl(), new ArrayMap<String, Object>(1), new RxStringCallback() {
                     @Override
                     public void onNext(Object tag, String response) {
-                        if (!TextUtils.isEmpty(response)) {
-                            switch (mCurrentLevel) {
-                                case LEVEL_PROVINCE:
-                                    List<Province> provinces = JSONUtils.paraseDataList(response, Province.class);
-                                    for (Province province : provinces) {
-                                        province.save();
-                                    }
-                                    queryProvince();
-                                    break;
-                                case LEVEL_CITY:
-                                    List<City> cities = JSONUtils.paraseDataList(response, City.class);
-                                    for (City city : cities) {
-                                        city.setProvinceId(mSelectedProvince.getId());
-                                        city.save();
-                                    }
-                                    queryCitys();
-                                    break;
-                                case LEVEL_COUNTRY:
-                                    List<Country> countrys = JSONUtils.paraseDataList(response, Country.class);
-                                    for (Country country : countrys) {
-                                        country.setCityId(mSelectedCity.getId());
-                                        country.save();
-                                    }
-                                    queryCountry();
-                                    break;
-                                default:
-                                    break;
-                            }
-                        }
+                        parseDataJson(response);
                         mProgressDialog.dismiss();
                     }
 
@@ -215,8 +182,55 @@ public class ChooseAreaActivity extends BaseActivity implements AdapterView.OnIt
                     }
                 });
     }
-    private void setListener() {
-        mListview.setOnItemClickListener(this);
+
+    private void parseDataJson(String response) {
+        if (!TextUtils.isEmpty(response)) {
+            switch (mCurrentLevel) {
+                case LEVEL_PROVINCE:
+                    List<Province> provinces = JSONUtils.paraseDataList(response, Province.class);
+                    for (Province province : provinces) {
+                        province.save();
+                    }
+                    queryProvince();
+                    break;
+                case LEVEL_CITY:
+                    List<City> cities = JSONUtils.paraseDataList(response, City.class);
+                    for (City city : cities) {
+                        city.setProvinceId(mSelectedProvince.getId());
+                        city.save();
+                    }
+                    queryCitys();
+                    break;
+                case LEVEL_COUNTRY:
+                    List<Country> countrys = JSONUtils.paraseDataList(response, Country.class);
+                    for (Country country : countrys) {
+                        country.setCityId(mSelectedCity.getId());
+                        country.save();
+                    }
+                    queryCountry();
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    /***
+     * 生成请求的url地址
+     * @return
+     */
+    private String buildUrl() {
+        switch (mCurrentLevel) {
+            case LEVEL_PROVINCE:
+                return Constaint.API.API_PROVINCE_LIST;
+            case LEVEL_CITY:
+                return Constaint.API.API_PROVINCE_LIST + "/" + mSelectedProvince.getId();
+            case LEVEL_COUNTRY:
+                return Constaint.API.API_PROVINCE_LIST + "/" + mSelectedProvince.getId() + "/" + mSelectedCity.getId();
+            default:
+                break;
+        }
+        return null;
     }
 
     /****
