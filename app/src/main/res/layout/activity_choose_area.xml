@@ -3,23 +3,22 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/rl_splash"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context="android.coolweather.com.coolweather.activity.ChooseAreaActivity">
+    tools:context="com.uweather.activity.ChooseAreaActivity">
 
 
     <TextView
         android:id="@+id/tv_are_name"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="@dimen/dimen_50"
         android:background="@color/colorAccent"
         android:gravity="center|center_vertical"
-        android:paddingBottom="@dimen/dimen_18"
-        android:paddingTop="@dimen/dimen_18"
+        android:text="中国"
         android:textSize="18sp"
-        android:textStyle="bold"
-        android:text="中国"/>
+        android:textStyle="bold"/>
 
     <ListView
         android:id="@+id/listview"

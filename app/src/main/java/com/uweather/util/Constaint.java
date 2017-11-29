@@ -1,4 +1,4 @@
-package android.coolweather.com.coolweather.util;
+package com.uweather.util;
 
 /**
  * 作者:candy

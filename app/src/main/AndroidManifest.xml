@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="android.coolweather.com.coolweather">
+          package="com.uweather">
 
     <uses-permission android:name="android.permission.INTERNET"/>
 
@@ -20,10 +20,17 @@
             </intent-filter>
         </activity>
         <activity android:name=".activity.MainActivity"/>
+
         <service
             android:name=".service.AutoUpdateService"
             android:enabled="true"
-            android:exported="true" />
+            android:exported="true"/>
+
+        <activity
+            android:name=".activity.BaseActivity"
+            android:label="@string/title_activity_base"
+            android:theme="@style/AppTheme">
+        </activity>
     </application>
 
 </manifest>

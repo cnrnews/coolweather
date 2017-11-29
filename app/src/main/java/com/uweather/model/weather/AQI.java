@@ -1,4 +1,4 @@
-package android.coolweather.com.coolweather.model;
+package com.uweather.model.weather;
 
 public class AQI {
 

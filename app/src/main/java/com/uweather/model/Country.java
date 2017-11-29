@@ -1,4 +1,4 @@
-package android.coolweather.com.coolweather.model;
+package com.uweather.model;
 
 import org.litepal.crud.DataSupport;
 

@@ -1,6 +1,8 @@
-package android.coolweather.com.coolweather;
+package com.uweather;
 
 import android.app.Application;
+
+import net.youmi.android.AdManager;
 
 import org.litepal.LitePal;
 
@@ -15,5 +17,9 @@ public class BaseApplication extends Application {
     public void onCreate() {
         super.onCreate();
         LitePal.initialize(this);
+
+        AdManager.getInstance(this)
+                .init("9890f096893d2bc8","ac4b471748975581",
+                        false);
     }
 }

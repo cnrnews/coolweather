@@ -1,14 +1,9 @@
-package android.coolweather.com.coolweather.activity;
+package com.uweather.activity;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.coolweather.com.coolweather.R;
-import android.coolweather.com.coolweather.model.Forecast;
-import android.coolweather.com.coolweather.model.Weather;
-import android.coolweather.com.coolweather.service.AutoUpdateService;
-import android.coolweather.com.coolweather.util.Constaint;
-import android.coolweather.com.coolweather.util.Utility;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
@@ -17,11 +12,12 @@ import android.support.v4.util.ArrayMap;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v4.widget.SwipeRefreshLayout;
-import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -32,6 +28,14 @@ import com.bumptech.glide.Glide;
 import com.tamic.novate.Novate;
 import com.tamic.novate.Throwable;
 import com.tamic.novate.callback.RxStringCallback;
+import com.uweather.R;
+import com.uweather.model.weather.Forecast;
+import com.uweather.model.weather.Weather;
+import com.uweather.service.AutoUpdateService;
+import com.uweather.util.Constaint;
+import com.uweather.util.JSONUtils;
+
+import net.youmi.android.nm.bn.BannerManager;
 
 /**
  * @author:candy 创建时间:2017/11/29 10:56
@@ -39,7 +43,7 @@ import com.tamic.novate.callback.RxStringCallback;
  * 功能描述:
  * 天气首页
  */
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends BaseActivity {
 
     private static final String WEATHER_ID = "weather_id";
     public DrawerLayout drawerLayout;
@@ -85,13 +89,13 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
         if (Build.VERSION.SDK_INT >= 21) {
             View decorView = getWindow().getDecorView();
             decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
                     | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
             getWindow().setStatusBarColor(Color.TRANSPARENT);
         }
-        setContentView(R.layout.activity_main);
         mContext = this;
         // 初始化各控件
         bingPicImg = (ImageView) findViewById(R.id.bing_pic_img);
@@ -111,18 +115,10 @@ public class MainActivity extends AppCompatActivity {
         drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
         navButton = (Button) findViewById(R.id.nav_button);
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        String weatherString = prefs.getString("weather", null);
-//        if (weatherString != null) {
-//            // 有缓存时直接解析天气数据
-//            Weather weather = Utility.handleWeatherResponse(weatherString);
-//            mWeatherId = weather.basic.weatherId;
-//            showWeatherInfo(weather);
-//        } else {
-            // 无缓存时去服务器查询天气
-            mWeatherId = getIntent().getStringExtra(WEATHER_ID);
-            weatherLayout.setVisibility(View.INVISIBLE);
-            requestWeather(mWeatherId);
-//        }
+        // 无缓存时去服务器查询天气
+        mWeatherId = getIntent().getStringExtra(WEATHER_ID);
+        weatherLayout.setVisibility(View.INVISIBLE);
+        requestWeather(mWeatherId);
         swipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
@@ -141,21 +137,21 @@ public class MainActivity extends AppCompatActivity {
         } else {
             loadBingPic();
         }
+        setupBannerAd();
     }
 
     /**
      * 根据天气id请求城市天气信息。
      */
     public void requestWeather(final String weatherId) {
-        String weatherUrl =Constaint.API.API_WARTHER+"?cityid=" + weatherId + "&key=" + Constaint.API.APP_KEY;
-        Log.i("TAG", "weatherUrl: "+weatherUrl);
+        String weatherUrl = Constaint.API.API_WARTHER + "?cityid=" + weatherId + "&key=" + Constaint.API.APP_KEY;
         new Novate.Builder(this)
                 .baseUrl(Constaint.API.BASE_HOST)
                 .build()
                 .rxGet(weatherUrl, new ArrayMap<String, Object>(1), new RxStringCallback() {
                     @Override
                     public void onNext(Object tag, String response) {
-                        final Weather weather = Utility.handleWeatherResponse(response);
+                        final Weather weather = JSONUtils.handleWeatherResponse(response);
                         if (weather != null && "ok".equals(weather.status)) {
                             SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(MainActivity.this).edit();
                             editor.putString("weather", response);
@@ -167,7 +163,6 @@ public class MainActivity extends AppCompatActivity {
                         }
                         swipeRefresh.setRefreshing(false);
                     }
-
                     @Override
                     public void onError(Object tag, Throwable e) {
                         Toast.makeText(MainActivity.this, "获取天气信息失败", Toast.LENGTH_SHORT).show();
@@ -181,9 +176,7 @@ public class MainActivity extends AppCompatActivity {
                 });
 
         loadBingPic();
-
     }
-
     /**
      * 加载必应每日一图
      */
@@ -201,7 +194,6 @@ public class MainActivity extends AppCompatActivity {
                         editor.apply();
                         Glide.with(mContext).load(response).into(bingPicImg);
                     }
-
                     @Override
                     public void onError(Object tag, Throwable e) {
 
@@ -253,5 +245,18 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = new Intent(this, AutoUpdateService.class);
         startService(intent);
     }
-
+    /**
+     * 设置广告条广告
+     */
+    private void setupBannerAd() {
+        FrameLayout.LayoutParams layoutParams =
+                new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        // 设置广告条的悬浮位置，这里示例为右下角
+        layoutParams.gravity = Gravity.BOTTOM | Gravity.RIGHT;
+        // 获取广告条
+        final View bannerView = BannerManager.getInstance(mContext)
+                .getBannerView(mContext,null);
+        // 添加广告条到窗口中
+        ((Activity) mContext).addContentView(bannerView, layoutParams);
+    }
 }

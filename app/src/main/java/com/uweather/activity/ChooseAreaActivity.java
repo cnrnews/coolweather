@@ -1,15 +1,8 @@
-package android.coolweather.com.coolweather.activity;
+package com.uweather.activity;
 
 import android.app.ProgressDialog;
-import android.coolweather.com.coolweather.R;
-import android.coolweather.com.coolweather.model.City;
-import android.coolweather.com.coolweather.model.Country;
-import android.coolweather.com.coolweather.model.Province;
-import android.coolweather.com.coolweather.util.Constaint;
-import android.coolweather.com.coolweather.util.JSONUtils;
 import android.os.Bundle;
 import android.support.v4.util.ArrayMap;
-import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.view.View;
 import android.widget.AdapterView;
@@ -17,9 +10,14 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import com.tamic.novate.Novate;
 import com.tamic.novate.Throwable;
 import com.tamic.novate.callback.RxStringCallback;
+import com.uweather.R;
+import com.uweather.model.City;
+import com.uweather.model.Country;
+import com.uweather.model.Province;
+import com.uweather.util.Constaint;
+import com.uweather.util.JSONUtils;
 
 import org.litepal.crud.DataSupport;
 
@@ -32,7 +30,7 @@ import java.util.List;
  * 功能描述:
  * 省市选择
  */
-public class ChooseAreaActivity extends AppCompatActivity implements AdapterView.OnItemClickListener {
+public class ChooseAreaActivity extends BaseActivity implements AdapterView.OnItemClickListener {
 
 
     private static final int LEVEL_PROVINCE = 0;
@@ -44,7 +42,6 @@ public class ChooseAreaActivity extends AppCompatActivity implements AdapterView
     private ListView mListview;
     private ArrayAdapter<String> mAreaAdapter;
     private List<String> mDatas = new ArrayList<>();
-
 
 
     private ProgressDialog mProgressDialog;
@@ -71,7 +68,7 @@ public class ChooseAreaActivity extends AppCompatActivity implements AdapterView
      **/
     private City mSelectedCity;
 
-    private int mCurrentLevel = LEVEL_PROVINCE;
+    private int mCurrentLevel;
 
 
     @Override
@@ -90,7 +87,7 @@ public class ChooseAreaActivity extends AppCompatActivity implements AdapterView
         mListview = findViewById(R.id.listview);
 
 
-        mProgressDialog=new ProgressDialog(this);
+        mProgressDialog = new ProgressDialog(this);
         mProgressDialog.setMessage("loading...");
     }
 
@@ -99,6 +96,7 @@ public class ChooseAreaActivity extends AppCompatActivity implements AdapterView
      * 先从数据库获取如果为空则从网络获取
      */
     private void queryProvince() {
+        mCurrentLevel = LEVEL_PROVINCE;
         mProvinces = DataSupport.findAll(Province.class);
         if (mProvinces.size() > 0) {
             mDatas.clear();
@@ -108,9 +106,8 @@ public class ChooseAreaActivity extends AppCompatActivity implements AdapterView
             mAreaAdapter.notifyDataSetChanged();
             mListview.setSelection(0);
             mTvAreName.setText("中国");
-            mCurrentLevel = LEVEL_PROVINCE;
         } else {
-            queryProvinceFromNet();
+            queryListFromNet();
         }
     }
 
@@ -119,6 +116,7 @@ public class ChooseAreaActivity extends AppCompatActivity implements AdapterView
      * 先从数据库获取如果为空则从网络获取
      */
     private void queryCitys() {
+        mCurrentLevel = LEVEL_CITY;
         mCities = DataSupport.where("provinceId=?", mSelectedProvince.getId() + "").find(City.class);
         if (mCities.size() > 0) {
             mDatas.clear();
@@ -128,17 +126,16 @@ public class ChooseAreaActivity extends AppCompatActivity implements AdapterView
             mAreaAdapter.notifyDataSetChanged();
             mListview.setSelection(0);
             mTvAreName.setText(mSelectedProvince.getName());
-            mCurrentLevel = LEVEL_CITY;
         } else {
-            queryCitysFromNet();
+            queryListFromNet();
         }
     }
-
     /***
      * 获取区县列表
      * 先从数据库获取如果为空则从网络获取
      */
     private void queryCountry() {
+        mCurrentLevel = LEVEL_COUNTRY;
         mCountries = DataSupport.where("cityId=?", mSelectedCity.getId() + "").find(Country.class);
         if (mCountries.size() > 0) {
             mDatas.clear();
@@ -148,102 +145,61 @@ public class ChooseAreaActivity extends AppCompatActivity implements AdapterView
             mAreaAdapter.notifyDataSetChanged();
             mListview.setSelection(0);
             mTvAreName.setText(mSelectedCity.getName());
-            mCurrentLevel = LEVEL_COUNTRY;
         } else {
-            queryCountrysFromNet();
+            queryListFromNet();
         }
     }
-
     /***
-     * 网络获取所有省份列表
+     * 网络获取列表数据
      */
-    private void queryProvinceFromNet() {
+    private void queryListFromNet() {
         mProgressDialog.show();
-        new Novate.Builder(this)
-                .baseUrl(Constaint.API.BASE_HOST)
-                .build()
-                .rxGet(Constaint.API.API_PROVINCE_LIST, new ArrayMap<String, Object>(1), new RxStringCallback() {
-
-
+        String url = "";
+        switch (mCurrentLevel) {
+            case LEVEL_PROVINCE:
+                url = Constaint.API.API_PROVINCE_LIST;
+                break;
+            case LEVEL_CITY:
+                url = Constaint.API.API_PROVINCE_LIST + "/" + mSelectedProvince.getId();
+                break;
+            case LEVEL_COUNTRY:
+                url = Constaint.API.API_PROVINCE_LIST + "/" + mSelectedProvince.getId() + "/" + mSelectedCity.getId();
+                break;
+            default:
+                break;
+        }
+        getNovate()
+                .rxGet(url, new ArrayMap<String, Object>(1), new RxStringCallback() {
                     @Override
                     public void onNext(Object tag, String response) {
                         if (!TextUtils.isEmpty(response)) {
-                            List<Province> provinces = JSONUtils.paraseJsonArray(response);
-                            for (Province province : provinces) {
-                                province.save();
+                            switch (mCurrentLevel) {
+                                case LEVEL_PROVINCE:
+                                    List<Province> provinces = JSONUtils.paraseDataList(response, Province.class);
+                                    for (Province province : provinces) {
+                                        province.save();
+                                    }
+                                    queryProvince();
+                                    break;
+                                case LEVEL_CITY:
+                                    List<City> cities = JSONUtils.paraseDataList(response, City.class);
+                                    for (City city : cities) {
+                                        city.setProvinceId(mSelectedProvince.getId());
+                                        city.save();
+                                    }
+                                    queryCitys();
+                                    break;
+                                case LEVEL_COUNTRY:
+                                    List<Country> countrys = JSONUtils.paraseDataList(response, Country.class);
+                                    for (Country country : countrys) {
+                                        country.setCityId(mSelectedCity.getId());
+                                        country.save();
+                                    }
+                                    queryCountry();
+                                    break;
+                                default:
+                                    break;
                             }
-                            queryProvince();
-                        }
-                        mProgressDialog.dismiss();
-                    }
-
-                    @Override
-                    public void onError(Object tag, Throwable e) {
-                                            mProgressDialog.dismiss();
-                    }
-
-                    @Override
-                    public void onCancel(Object tag, Throwable e) {
-                        mProgressDialog.dismiss();
-                    }
-                });
-    }
-
-    /***
-     * 网络获取所有城市列表
-     */
-    private void queryCitysFromNet() {
-
-        mProgressDialog.show();
-        new Novate.Builder(this)
-                .baseUrl(Constaint.API.BASE_HOST)
-                .build()
-                .rxGet(Constaint.API.API_PROVINCE_LIST + "/" + mSelectedProvince.getId(), new ArrayMap<String, Object>(1), new RxStringCallback() {
-                    @Override
-                    public void onNext(Object tag, String response) {
-                        if (!TextUtils.isEmpty(response)) {
-                            List<City> cities = JSONUtils.paraseCitys(response);
-                            for (City city : cities) {
-                                city.setProvinceId(mSelectedProvince.getId());
-                                city.save();
-                            }
-                            queryCitys();
-                        }
-                        mProgressDialog.dismiss();
-                    }
-
-                    @Override
-                    public void onError(Object tag, Throwable e) {
-                        mProgressDialog.dismiss();
-                    }
-
-                    @Override
-                    public void onCancel(Object tag, Throwable e) {
-                        mProgressDialog.dismiss();
-                    }
-                });
-    }
-
-    /***
-     * 网络获取所有区县列表
-     */
-    private void queryCountrysFromNet() {
-        mProgressDialog.show();
-        ArrayMap<String, Object> param = new ArrayMap<>(1);
-        String url = Constaint.API.API_PROVINCE_LIST + "/" + mSelectedProvince.getId() + "/" + mSelectedCity.getId();
-        new Novate.Builder(this)
-                .baseUrl(Constaint.API.BASE_HOST)
-                .build()
-                .rxGet(url, param, new RxStringCallback() {
-                    @Override
-                    public void onNext(Object tag, String response) {
-                        if (!TextUtils.isEmpty(response)) {
-                            List<Country> countrys = JSONUtils.paraseCountrys(response);
-                            for (Country country : countrys) {
-                                country.setCityId(mSelectedCity.getId());
-                                country.save();
-                            }
-                            queryCountry();
                         }
                         mProgressDialog.dismiss();
                     }
@@ -262,6 +218,7 @@ public class ChooseAreaActivity extends AppCompatActivity implements AdapterView
     private void setListener() {
         mListview.setOnItemClickListener(this);
     }
+
     /****
      * 列表单击事件
      * @param adapterView
@@ -281,10 +238,13 @@ public class ChooseAreaActivity extends AppCompatActivity implements AdapterView
                 queryCountry();
                 break;
             case LEVEL_COUNTRY:
-                MainActivity.actionStart(this,mCountries.get(position).getWeather_id());
+                MainActivity.actionStart(this, mCountries.get(position).getWeather_id());
+                break;
+            default:
                 break;
         }
     }
+
     @Override
     public void onBackPressed() {
         if (mCurrentLevel == LEVEL_COUNTRY) {

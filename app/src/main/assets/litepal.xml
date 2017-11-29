@@ -31,9 +31,9 @@
     	</list>
     -->
     <list>
-        <mapping class="android.coolweather.com.coolweather.model.Province" />
-        <mapping class="android.coolweather.com.coolweather.model.City" />
-        <mapping class="android.coolweather.com.coolweather.model.Country" />
+        <mapping class="com.uweather.model.Province" />
+        <mapping class="com.uweather.model.City" />
+        <mapping class="com.uweather.model.Country" />
     </list>
 
     <!--

@@ -1,18 +1,29 @@
-package android.coolweather.com.coolweather.model;
+package com.uweather.model;
 
 import org.litepal.crud.DataSupport;
 
 /**
  * 作者:candy
- * 创建时间:2017/11/29 08:35
+ * 创建时间:2017/11/29 08:37
  * 邮箱:1601796593@qq.com
  * 功能描述:
- * 省份
+ * 城市
  */
-public class Province extends DataSupport {
+public class City extends DataSupport {
+
     private int id;
+    private int provinceId;
     private int code;
     private String name;
+
+    public int getProvinceId() {
+        return provinceId;
+    }
+
+    public void setProvinceId(int provinceId) {
+        this.provinceId = provinceId;
+    }
+
     public int getId() {
         return id;
     }
