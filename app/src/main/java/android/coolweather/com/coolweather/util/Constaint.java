@@ -9,7 +9,11 @@ package android.coolweather.com.coolweather.util;
  */
 public interface Constaint {
 
+
     interface API{
+
+        /**APP key**/
+        String APP_KEY="13a8db227b3143e2a660970097cdc891";
         /**HOST**/
         String BASE_HOST="http://guolin.tech/api/";
         /**省份列表**/

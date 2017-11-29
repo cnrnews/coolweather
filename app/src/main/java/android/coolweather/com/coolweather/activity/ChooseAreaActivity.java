@@ -280,6 +280,9 @@ public class ChooseAreaActivity extends AppCompatActivity implements AdapterView
                 mSelectedCity = mCities.get(position);
                 queryCountry();
                 break;
+            case LEVEL_COUNTRY:
+                MainActivity.actionStart(this,mCountries.get(position).getWeather_id());
+                break;
         }
     }
     @Override
